@@ -1,13 +1,20 @@
 (ns tools.cli.mock-git.utils
   (use [clojure.tools.cli :only [parse-opts]]))
 
-(defn build-synopsis [options-spec]
-  (->> (map (juxt first second) options-spec)
-       (map (fn [option-spec]
-              (->> (interpose "|" option-spec) (apply str))))
-       (map #(str "[" % "]"))
-       (interpose " ")
-       (apply str)))
+(defn build-synopsis [command options-spec]
+  (let [options-synopsis (->> (map (juxt first second) options-spec)
+                              (map (fn [[short long]]
+                                     (if (or (nil? short)
+                                             (nil? long))
+                                       (str short long)
+                                       (str short " | " long))))
+                              (map #(str "[" % "]"))
+                              (interpose " ")
+                              (apply str))
+        command-synopsis (if (nil? command)
+                           "git"
+                           (str "git" " " command))]
+    (str command-synopsis " " options-synopsis)))
 
 (defn build-commands-summary [commands-spec]
   (->> commands-spec
@@ -26,7 +33,7 @@
     (->> [(str "git " command ": " description)
           ""
           "Synopsis"
-          (build-synopsis options-spec)
+          (build-synopsis command options-spec)
           ""
           commands-summary
           "Recognized options:"
